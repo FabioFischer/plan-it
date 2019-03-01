@@ -1,0 +1,65 @@
+
+t_user
+    id
+    name
+    email
+    
+t_user_login
+    id
+    user_id
+    hash
+    salt
+
+t_requisition_log
+    id
+    endpoint
+    params
+    start_date
+    end_date
+    body
+
+t_threshold_period
+    id
+    user_id
+    start_date
+    length
+
+t_account
+    id
+    user_id
+    name
+    description
+
+t_saving_goal
+    id
+    account_id
+    name
+    income_percentage
+    maximum_income
+    start_date
+    end_date
+
+t_transaction_category
+    id
+    user_id
+    name
+    period_goal
+
+t_transaction
+    id
+    account_id
+    category_id
+    status
+    date
+    time
+    value
+
+t_recurrent_transaction
+    id
+    account_id
+    payments
+    
+t_recurrent_transaction_detail
+    id
+    transaction_schedule_id
+    transaction_id
