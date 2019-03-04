@@ -1,5 +1,3 @@
-import { GenericOption } from "./generic-option.model";
-import { Equipment } from "./equipment.model";
 
 export class User {
     private id: number;

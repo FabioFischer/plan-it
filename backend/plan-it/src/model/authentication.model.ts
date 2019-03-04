@@ -1,5 +1,5 @@
 
-export class Login {
+export class Authentication {
     private id: number;
     private user_id: number;
     private hash: string;
@@ -10,7 +10,7 @@ export class Login {
             this.id = id;
         } else {
             if (isNaN(id)){
-                throw 'field <id> from <login> object must be numeric';
+                throw 'field <id> from <authentication> object must be numeric';
             }        
             this.id = +id;
         }
@@ -41,7 +41,7 @@ export class Login {
             this.user_id = user_id;
         } else {
             if (isNaN(user_id)){
-                throw 'field <user_id> from <login> object must be numeric';
+                throw 'field <user_id> from <authentication> object must be numeric';
             }        
             this.user_id = +user_id;
         }
@@ -60,33 +60,33 @@ export class Login {
     
     public validPostData() {
         if (this.getId() && this.getId() !== 0){
-            throw new Error('field <id> from <login> object must be 0 or null');
+            throw new Error('field <id> from <authentication> object must be 0 or null');
         }
         this.validateNotNullFields();
     }
 
     public validPutData() {
         if (!this.getId()){
-            throw new Error('field <id> from <login> cannot be null');
+            throw new Error('field <id> from <authentication> cannot be null');
         }
         this.validateNotNullFields();        
     }
 
     public validDeleteData() {
         if (!this.getId()){
-            throw new Error('field <id> from <login> cannot be null');
+            throw new Error('field <id> from <authentication> cannot be null');
         }
     }
 
     private validateNotNullFields() {
         if (!this.getHash()) {
-            throw new Error('field <hash> from <login> cannot be null');
+            throw new Error('field <hash> from <authentication> cannot be null');
         }
         if (!this.getSalt()) {
-            throw new Error('field <salt> from <login> cannot be null');
+            throw new Error('field <salt> from <authentication> cannot be null');
         }
         if (!this.getUserId()) {
-            throw new Error('field <user_id> from <login> cannot be null');
+            throw new Error('field <user_id> from <authentication> cannot be null');
         }
     }
 }

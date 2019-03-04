@@ -1,7 +1,7 @@
 import {Router, Request, Response} from 'express';
 import * as jwt from 'jsonwebtoken';
 
-import { Logger, StaticLogger, LogFrom } from '../core/logger';
+import { LoggerManager, StaticLogger, LogFrom } from '../core/logger-manager';
 import { GenericDBRequester } from '../database/dbconnector/generic.dbrequester';
 import { User } from '../model/user.model';
 
@@ -37,6 +37,7 @@ export abstract class GenericRest {
      */
     public static async authenticator(req: Request, res: Response, next: any) {
         try {
+            /*
             const token = req.get(process.env.TOKEN_HEADER_DEFINITION);
             const isUnauthenticatedResponse = () => {
                 this.generateResponse(res, GenericRestResultCodes.RESULT_CODE_LOGIN_UNAUTHENTICATED, null);
@@ -54,6 +55,8 @@ export abstract class GenericRest {
                 });
             }
             return;
+            */
+            next();
         } catch(e) {
             StaticLogger.getLoggerController().getLogger().error((e && e.exception ? e.exception.toString() : (e ? e.toString() : e)) + (e && e.stack ? e.stack.toString() : ''));
             this.generateResponse(res, e.errorCode);
@@ -65,7 +68,7 @@ export abstract class GenericRest {
      * 
      * @param req 
      */
-    public static async getAuthenticatedEmployee(req: Request): Promise<User> {
+    public static async getAuthenticatedUser(req: Request): Promise<User> {
         return req[`${process.env.AUTHENTICATED_USER_REQUEST_DEFINITION}`];
     }
     
@@ -74,7 +77,7 @@ export abstract class GenericRest {
      * @param req 
      * @param data 
      */
-    public static async setAuthenticatedEmployee(req: Request, data: any): Promise<void> {
+    public static async setAuthenticatedUser(req: Request, data: any): Promise<void> {
         req[`${process.env.AUTHENTICATED_USER_REQUEST_DEFINITION}`] = data;
     }
 
@@ -165,7 +168,7 @@ export abstract class GenericDBRest extends GenericRest {
 }
 
 export abstract class GenericFileRest extends GenericRest {
-    public static loggerManager: Logger;
+    public static loggerManager: LoggerManager;
     public static loggerType: LogFrom;
 
     constructor(loggerType: LogFrom) {

@@ -1,9 +1,9 @@
 import { ClusterWorkerMessageType } from "./cluster-message";
-const {Logger, transports} = require('winston');
 
-export class Logger {
+const winston = require('winston');
 
-    private dateFormat: Function;
+export class LoggerManager {
+
     private logDir: string;
     private actualFileDate: string;
     private consoleLogLevel: string;
@@ -13,21 +13,12 @@ export class Logger {
     private logger;
 
     constructor(logDir:string, consoleLogLevel: string, fileLogLevel: string, maxFileSize: number, handleException: boolean) {
-        this.setDateFormat(require('dateformat'));
         this.setLogDir(logDir);
         this.setConsoleLogLevel(consoleLogLevel);
         this.setFileLogLevel(fileLogLevel);
         this.setMaxFileSize(maxFileSize);
         this.setMaxHandleException(handleException)
         this.setupLogger(this.getLogDir(), this.getDate(), this.getConsoleLogLevel(), this.getFileLogLevel(), this.getMaxFileSize(), this.getHandleException());
-    }
-
-    public getDateFormat(): Function {
-        return this.dateFormat;
-    }
-
-    public setDateFormat(dateFormat: Function){
-        this.dateFormat = dateFormat;
     }
 
     public getLogDir(): string {
@@ -94,16 +85,16 @@ export class Logger {
     private setupLogger(logDir: String, fileDate: string, consoleLogLevel: string, fileLogLevel: string, maxFileSize: number, handleException: boolean){
         this.setActualFileDate(fileDate);
         let fullLogFile = `${logDir}/${fileDate}-log.log`;
-        this.setLogger(new Logger({
+        this.setLogger(winston.createLogger({
             transports: [
-                new transports.Console({
+                new winston.transports.Console({
                     timestamp: true,
                     colorize: true,
                     level: consoleLogLevel,
                     handleExceptions: handleException,
                     humanReadableUnhandledException: handleException
                 }),
-                new transports.File({
+                new winston.transports.File({
                     filename: fullLogFile,
                     timestamp: true,
                     level: fileLogLevel,
@@ -129,7 +120,7 @@ export class Logger {
     }
 
     private getDate(): string {
-        return this.getDateFormat()(new Date(), 'yyyy-mm-dd');
+        return new Date().toISOString();
     }
 
 }
@@ -152,22 +143,22 @@ export class WorkerLoggerController {
 }
 
 export class WorkerLogger {
-    public error(message: string, logFrom?:LogFrom){
+    public error(message: string, logFrom?: LogFrom){
         process.send({type: ClusterWorkerMessageType.LOG, logType: LogType.ERROR, message: message, logFrom: (logFrom ? logFrom : LogFrom.BACK)});
     }
-    public warn(message: string, logFrom?:LogFrom){
+    public warn(message: string, logFrom?: LogFrom){
         process.send({type: ClusterWorkerMessageType.LOG, logType: LogType.WARN, message: message, logFrom: (logFrom ? logFrom : LogFrom.BACK)});
     }
-    public info(message: string, logFrom?:LogFrom){
+    public info(message: string, logFrom?: LogFrom){
         process.send({type: ClusterWorkerMessageType.LOG, logType: LogType.INFO, message: message, logFrom: (logFrom ? logFrom : LogFrom.BACK)});
     }
-    public debug(message: string, logFrom?:LogFrom){
+    public debug(message: string, logFrom?: LogFrom){
         process.send({type: ClusterWorkerMessageType.LOG, logType: LogType.DEBUG, message: message, logFrom: (logFrom ? logFrom : LogFrom.BACK)});
     }
-    public verbose(message: string, logFrom?:LogFrom){
+    public verbose(message: string, logFrom?: LogFrom){
         process.send({type: ClusterWorkerMessageType.LOG, logType: LogType.VERBOSE, message: message, logFrom: (logFrom ? logFrom : LogFrom.BACK)});
     }
-    public silly(message: string, logFrom?:LogFrom){
+    public silly(message: string, logFrom?: LogFrom){
         process.send({type: ClusterWorkerMessageType.LOG, logType: LogType.SILLY, message: message, logFrom: (logFrom ? logFrom : LogFrom.BACK)});
     }
 }
@@ -204,7 +195,7 @@ export class StaticLogger {
         if (!StaticLogger._loggerControllerBack) {
             let cluster = require('cluster');
             if (cluster.isMaster) {
-                StaticLogger._loggerControllerBack = new Logger (
+                StaticLogger._loggerControllerBack = new LoggerManager (
                     process.env.AL_DIR || 'logs/back',
                     process.env.AL_CONSOLE_LOGLEVEL || 'silly',
                     process.env.AL_FILE_LOGLEVEL || 'info',
@@ -224,7 +215,7 @@ export class StaticLogger {
         if (!StaticLogger._loggerControllerFront) {
             let cluster = require('cluster');
             if (cluster.isMaster) {
-                StaticLogger._loggerControllerFront = new Logger(
+                StaticLogger._loggerControllerFront = new LoggerManager(
                     process.env.FL_DIR || 'logs/front',
                     process.env.FL_CONSOLE_LOGLEVEL || 'silly',
                     process.env.FL_FILE_LOGLEVEL || 'info',
