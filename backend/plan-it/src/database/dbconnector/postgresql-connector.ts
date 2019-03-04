@@ -1,5 +1,4 @@
 import { DatabaseConnector, DatabaseConnectionType, QueryCacheElement } from "./database-connector";
-import { LoggerController, StaticLogger, LogFrom } from '../../core/logger-controller.core';
 import { GenericRestResultCodes } from "../../rest/generic.rest";
 
 const SQL_PROVIDER_FOLDER: string = 'postgresql';

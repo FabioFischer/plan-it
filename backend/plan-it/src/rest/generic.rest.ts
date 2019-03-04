@@ -1,7 +1,7 @@
 import {Router, Request, Response} from 'express';
 import * as jwt from 'jsonwebtoken';
 
-import { LoggerController, StaticLogger, LogFrom } from '../core/logger-controller.core';
+import { Logger, StaticLogger, LogFrom } from '../core/logger';
 import { GenericDBRequester } from '../database/dbconnector/generic.dbrequester';
 import { User } from '../model/user.model';
 
@@ -165,8 +165,7 @@ export abstract class GenericDBRest extends GenericRest {
 }
 
 export abstract class GenericFileRest extends GenericRest {
-
-    public static loggerManager: LoggerController;
+    public static loggerManager: Logger;
     public static loggerType: LogFrom;
 
     constructor(loggerType: LogFrom) {

@@ -1,7 +1,7 @@
 import { ClusterWorkerMessageType } from "./cluster-message";
 const {Logger, transports} = require('winston');
 
-export class LoggerController {
+export class Logger {
 
     private dateFormat: Function;
     private logDir: string;
@@ -204,7 +204,7 @@ export class StaticLogger {
         if (!StaticLogger._loggerControllerBack) {
             let cluster = require('cluster');
             if (cluster.isMaster) {
-                StaticLogger._loggerControllerBack = new LoggerController (
+                StaticLogger._loggerControllerBack = new Logger (
                     process.env.AL_DIR || 'logs/back',
                     process.env.AL_CONSOLE_LOGLEVEL || 'silly',
                     process.env.AL_FILE_LOGLEVEL || 'info',
@@ -224,7 +224,7 @@ export class StaticLogger {
         if (!StaticLogger._loggerControllerFront) {
             let cluster = require('cluster');
             if (cluster.isMaster) {
-                StaticLogger._loggerControllerFront = new LoggerController(
+                StaticLogger._loggerControllerFront = new Logger(
                     process.env.FL_DIR || 'logs/front',
                     process.env.FL_CONSOLE_LOGLEVEL || 'silly',
                     process.env.FL_FILE_LOGLEVEL || 'info',

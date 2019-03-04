@@ -1,6 +1,6 @@
 
 import { ClusterWorkerMessageType, ClusterMasterMessageType } from './core/cluster-message';
-import { LogType, StaticLogger } from './core/logger-controller.core';
+import { LogType, StaticLogger } from './core/logger';
 
 import * as debug from 'debug';
 import * as http from 'http';

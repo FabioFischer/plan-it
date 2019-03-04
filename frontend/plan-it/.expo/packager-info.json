@@ -1,9 +1,9 @@
 {
   "devToolsPort": 19002,
-  "expoServerPort": 19000,
-  "packagerPort": 19001,
-  "packagerPid": 10888,
-  "expoServerNgrokUrl": "https://g9-r28.anonymous.plan-it.exp.direct",
-  "packagerNgrokUrl": "https://packager.g9-r28.anonymous.plan-it.exp.direct",
-  "ngrokPid": 12392
+  "expoServerPort": null,
+  "packagerPort": null,
+  "packagerPid": null,
+  "expoServerNgrokUrl": null,
+  "packagerNgrokUrl": null,
+  "ngrokPid": null
 }

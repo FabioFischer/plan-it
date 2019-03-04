@@ -8,7 +8,7 @@ CREATE TABLE t_user (
 	email			VARCHAR(128) NOT NULL,
 	name			VARCHAR(128) NOT NULL,
 	CONSTRAINT pk_user
-       PRIMARY KEY (user_id),
+       PRIMARY KEY (id),
 	CONSTRAINT uk_user_email
 		UNIQUE (email)
 );
@@ -85,7 +85,7 @@ CREATE TABLE t_account (
        FOREIGN KEY (user_id)
 	REFERENCES t_user(id),
 	CONSTRAINT uk_account_name
-		UNIQUE (name)
+		UNIQUE (user_id, name)
 );
 
 /*-------------------------------------------------------------------------*/
@@ -96,8 +96,8 @@ CREATE TABLE t_saving_goal (
 	id	 		BIGSERIAL,
 	account_id	 	BIGINT NOT NULL,
 	name			VARCHAR(128) NOT NULL,
-	income_percentagee	NUMBER NOT NULL,
-	maximum_income	NUMBER,
+	income_percentagee	FLOAT NOT NULL,
+	maximum_income	FLOAT,
 	start_date		DATE,
 	end_date		DATE,
 	CONSTRAINT pk_saving_goal
@@ -105,8 +105,8 @@ CREATE TABLE t_saving_goal (
 	CONSTRAINT fk_saving_goal_account
        FOREIGN KEY (account_id)
 	REFERENCES t_account(id),
-	CONSTRAINT uk_account_name
-		UNIQUE (name)
+	CONSTRAINT uk_saving_goal_name
+		UNIQUE (account_id, name)
 );
 
 /*-------------------------------------------------------------------------*/
@@ -117,14 +117,14 @@ CREATE TABLE t_transaction_category (
 	id	 		BIGSERIAL,
 	user_id	 	BIGINT NOT NULL,
 	name			VARCHAR(128) NOT NULL,
-	period_goal		NUMBER,
+	period_goal		FLOAT,
 	CONSTRAINT pk_transaction_category
        PRIMARY KEY (id),
 	CONSTRAINT fk_transaction_category_user
        FOREIGN KEY (user_id)
 	REFERENCES t_user(id),
 	CONSTRAINT uk_transaction_category_name
-		UNIQUE (name)
+		UNIQUE (user_id, name)
 );
 
 /*-------------------------------------------------------------------------*/
@@ -139,7 +139,7 @@ CREATE TABLE t_transaction (
 	date			DATE NOT NULL,
 	time			TIME WITHOUT TIME ZONE NOT NULL,
 	time_zone		INTEGER NOT NULL,
-	value			NUMBER NOT NULL,
+	value			FLOAT NOT NULL,
 	insert_date		TIMESTAMP WITHOUT TIME ZONE NOT NULL,
 	last_edit_date	TIMESTAMP WITHOUT TIME ZONE,
 	CONSTRAINT pk_transaction
@@ -175,7 +175,7 @@ CREATE TABLE t_recurrent_transaction_detail (
 	id	 			BIGSERIAL,
 	recurrent_transaction_id	BIGINT NOT NULL,
 	transaction_id		BIGINT NOT NULL,
-	CONSTRAINT pk_recurrent_transaction
+	CONSTRAINT pk_recurrent_transaction_detail
        PRIMARY KEY (id),
 	CONSTRAINT fk_recurrent_transaction_parent
        FOREIGN KEY (recurrent_transaction_id)
