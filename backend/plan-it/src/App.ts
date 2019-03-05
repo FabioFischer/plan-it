@@ -4,6 +4,9 @@ import * as bodyParser from 'body-parser';
 import * as boolParser  from 'express-query-boolean';
 import * as cors from "cors";
 
+import AuthenticationRouter from "./rest/authentication.rest";
+import UserRouter from "./rest/user.rest";
+
 
 // Creates and configures an ExpressJS web server.
 class App {
@@ -53,6 +56,8 @@ class App {
             });
         });
         this.express.use('/', router);
+        this.express.use('/authentication', AuthenticationRouter);
+        this.express.use('/user', UserRouter);
     }
 }
 

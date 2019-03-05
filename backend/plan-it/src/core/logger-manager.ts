@@ -1,6 +1,8 @@
 import { ClusterWorkerMessageType } from "./cluster-message";
 
-const winston = require('winston');
+const { createLogger, format, transports } = require('winston');
+
+const mkdirp = require('mkdirp');
 
 export class LoggerManager {
 
@@ -85,42 +87,50 @@ export class LoggerManager {
     private setupLogger(logDir: String, fileDate: string, consoleLogLevel: string, fileLogLevel: string, maxFileSize: number, handleException: boolean){
         this.setActualFileDate(fileDate);
         let fullLogFile = `${logDir}/${fileDate}-log.log`;
-        this.setLogger(winston.createLogger({
-            transports: [
-                new winston.transports.Console({
-                    timestamp: true,
-                    colorize: true,
-                    level: consoleLogLevel,
-                    handleExceptions: handleException,
-                    humanReadableUnhandledException: handleException
-                }),
-                new winston.transports.File({
-                    filename: fullLogFile,
-                    timestamp: true,
-                    level: fileLogLevel,
-                    maxsize: maxFileSize,
-                    handleExceptions: handleException,
-                    humanReadableUnhandledException: handleException,
-                    json: true
-                })
-            ]
-        }));
-        this.logger.info('New logger created:\n' + 
-                        `   Console Log Level: ${consoleLogLevel}\n` +
-                        `   File Log Level: ${fileLogLevel}\n` +
-                        `   Max File Size: ${maxFileSize}\n` +
-                        `   Handle Exception: ${handleException}\n` +
-                        `   Full Log File: ${fullLogFile}`
-                        );
+        this.setLogger(
+            createLogger({
+                level: fileLogLevel,
+                format: format.combine(
+                    format.errors({ stack: true }),
+                    format.timestamp({
+                      format: 'HH:mm:ss DD/MM/YYYY'
+                    }),
+                    format.json(),
+                    format.printf(info => `${info.timestamp} ${info.level}: ${info.message}`)
+                ),
+                transports: [
+                    new transports.Console({
+                        handleExceptions: handleException,
+                        humanReadableUnhandledException: handleException
+                    }),
+                    new transports.File({
+                        filename: fullLogFile,
+                        maxsize: maxFileSize,
+                        handleExceptions: handleException,
+                        humanReadableUnhandledException: handleException,
+                        json: true
+                    })
+                ]
+            })
+        );
+        this.logger.log(
+            'info', 'New logger created:\n' + 
+            `   Console Log Level: ${consoleLogLevel}\n` +
+            `   File Log Level: ${fileLogLevel}\n` +
+            `   Max File Size: ${maxFileSize}\n` +
+            `   Handle Exception: ${handleException}\n` +
+            `   Full Log File: ${fullLogFile}`
+        );
     }
 
     private makeDir(logDir:string) {
-        let mkdirp = require('mkdirp');
         mkdirp.sync(logDir);
     }
 
     private getDate(): string {
-        return new Date().toISOString();
+        let to2Digits = (n: number) => ('0' + n).slice(-2);
+        let date = new Date();
+        return `${to2Digits(date.getDate()) + '-' + to2Digits(date.getMonth() + 1) + '-' + date.getFullYear().toString()}`;
     }
 
 }

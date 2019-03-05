@@ -30,22 +30,22 @@ if (cluster.isMaster) {
                     let logger = StaticLogger.getLoggerController(msg.logFrom);
                     switch (msg.logType) {
                         case LogType.ERROR:
-                            logger.getLogger().error(msg.message);
+                            logger.getLogger().log('error', msg.message);
                             break;
                         case LogType.WARN:
-                            logger.getLogger().warn(msg.message);
+                            logger.getLogger().log('warn', msg.message);
                             break;
                         case LogType.INFO:
-                            logger.getLogger().info(msg.message);
+                            logger.getLogger().log('info', msg.message);
                             break;
                         case LogType.DEBUG:
-                            logger.getLogger().debug(msg.message);
+                            logger.getLogger().log('debug', msg.message);
                             break;
                         case LogType.VERBOSE:
-                            logger.getLogger().verbose(msg.message);
+                            logger.getLogger().log('verbose', msg.message);
                             break;
                         case LogType.SILLY:
-                            logger.getLogger().silly(msg.message);
+                            logger.getLogger().log('silly', msg.message);
                             break;
                     }
                     break;
@@ -125,7 +125,7 @@ if (cluster.isMaster) {
                     if (process.env.DEV_ENV == 'true') {
                         debug('ts-express:server');
                     }
-                    port = normalizePort(3005);
+                    port = normalizePort(3000);
                     App.set('port', port);
                     server = http.createServer(App);
                     server.listen(port);
