@@ -1,21 +1,22 @@
-import {Router, Request, Response} from 'express';
+import {Router, Request, Response, NextFunction} from 'express';
 import * as jwt from 'jsonwebtoken';
 
 import { LoggerManager, StaticLogger, LogFrom } from '../core/logger-manager';
 import { GenericDBRequester } from '../database/dbconnector/generic.dbrequester';
 import { User } from '../model/user.model';
 
-export class GenericRestResultCodes {
-    public static RESULT_CODE_SUCCESS: string = '00';
-    public static RESULT_CODE_GENERIC_ERROR: string = '10'
-    public static RESULT_CODE_LOGIN_UNAUTHENTICATED: string = '10-1000';
-    public static RESULT_CODE_LOGIN_INVALID_CREDENTIALS: string = '10-1001';
-    public static RESULT_CODE_MODEL_ERROR: string = '11';
-    public static RESULT_CODE_DB_ERROR: string = '12';
-    public static RESULT_CODE_DB_LESS_EQUAL_ZERO_ROW: string = '12-1000';
-    public static RESULT_CODE_DB_MORE_THAN_ONE_ROW: string = '12-1001';
-    public static RESULT_CODE_DB_OBJECT_ALREADY_EXISTS: string = '12-1002';
-    public static RESULT_CODE_DB_SERVICE_ORDER_PENDING_DEPENDENCIES: string = '12-1003';
+const restResultCodes = require('../../assets/result_code.json');
+
+/**
+ * Search on the application result codes for the given identifier. 
+ * If no result code is found to given id, the default code for a unmapped error is <10>.
+ * @param id result code identifier
+ */
+export const getResultCode = (id: string): string => {
+    let transaction = restResultCodes.find(resultCodes => resultCodes.id == id);
+    if (transaction && transaction.code) {
+        return transaction.code;
+    } return '10';
 }
 
 export abstract class GenericRest {
@@ -59,7 +60,21 @@ export abstract class GenericRest {
             next();
         } catch(e) {
             StaticLogger.getLoggerController().getLogger().error((e && e.exception ? e.exception.toString() : (e ? e.toString() : e)) + (e && e.stack ? e.stack.toString() : ''));
-            this.generateResponse(res, e.errorCode);
+            this.generateResponse(res, 401, getResultCode("UNMAPPED_ERROR"));
+            return;
+        }
+    }
+
+    /** */
+    public static async requisitionLogger(req: Request, res: Response, next: any) {
+        console.log(req)
+        console.log('---------')
+        console.log(res)
+        return;
+        try {
+
+        } catch(e) {
+            StaticLogger.getLoggerController().getLogger().error((e && e.exception ? e.exception.toString() : (e ? e.toString() : e)) + (e && e.stack ? e.stack.toString() : ''));
             return;
         }
     }
@@ -68,8 +83,8 @@ export abstract class GenericRest {
      * 
      * @param req 
      */
-    public static async getAuthenticatedUser(req: Request): Promise<User> {
-        return req[`${process.env.AUTHENTICATED_USER_REQUEST_DEFINITION}`];
+    public static async getAccessToken(req: Request): Promise<User> {
+        return req[`${process.env.ACCESS_TOKEN_DEFINITION}`];
     }
     
     /**
@@ -77,45 +92,38 @@ export abstract class GenericRest {
      * @param req 
      * @param data 
      */
-    public static async setAuthenticatedUser(req: Request, data: any): Promise<void> {
-        req[`${process.env.AUTHENTICATED_USER_REQUEST_DEFINITION}`] = data;
+    public static async setAccessToken(req: Request, data: any): Promise<void> {
+        req[`${process.env.ACCESS_TOKEN_DEFINITION}`] = data;
     }
 
-    public static async encapsulatedRequest(req: Request, res: Response, func: Function) {
+    public static async encapsulatedRequest(req: Request, res: Response, next: NextFunction, func: Function) {
         try {
-            let resultCode;
-            try {
-                /** 
-                 * Execute encapsulated function 
-                 */
-                let data = await func();
-                resultCode = (data ? data.resultCode || GenericRestResultCodes.RESULT_CODE_SUCCESS : GenericRestResultCodes.RESULT_CODE_SUCCESS);
-                this.generateResponse(
-                    res, 
-                    resultCode, 
-                    (data ? data.data || data : null)
-                );
-            } catch(e) {
-                resultCode = !resultCode ? e.errorCode : resultCode;
-                StaticLogger.getLoggerController().getLogger().error((e && e.exception ? e.exception.toString() : (e ? e.toString() : e)) + (e && e.stack ? e.stack.toString() : (e ? e.toString() : e)));
-                this.generateResponse(res, e.errorCode);
+            let data = await func();
+            if (data) {
+                this.generateResponse(res, 200, getResultCode("SUCCESSFUL"), data);
+            } else {
+                this.generateResponse(res, 204, getResultCode("SUCCESSFUL"));
             }
         } catch(e) {
-            StaticLogger.getLoggerController().getLogger().error((e && e.exception ? e.exception.toString() : (e ? e.toString() : e)) + (e && e.stack ? e.stack.toString() : (e ? e.toString() : e)));
-            this.generateResponse(res, e.errorCode);
+            console.log(e);
+            StaticLogger.getLoggerController().getLogger().log('error', JSON.stringify(e));
+            this.generateResponse(res, e.status || 500 , e.errorCode);
+        } finally {
+            if (next) next();
         }
     }
 
-    public static generateResponse(res: Response, resultCode: string, data?) {
-        if (data){
-            res.json({
-                resultCode: resultCode || GenericRestResultCodes.RESULT_CODE_GENERIC_ERROR,
-                data: data
-            });
+    public static generateResponse(res: Response, status: number, resultCode: string, data?) {
+        let resData = {
+            result_code: resultCode || getResultCode("UNMAPPED_ERROR")
+        };
+        if (data) {
+            resData['data'] = data;
+        }
+        if (status) {
+            res.status(status).json(resData);
         } else {
-            res.json({
-                resultCode: resultCode || GenericRestResultCodes.RESULT_CODE_GENERIC_ERROR
-            });
+            res.json(resData);
         }
     }
 

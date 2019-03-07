@@ -1,7 +1,7 @@
 
 export class User {
     private id: number;
-    private nome: string;
+    private name: string;
     private email: string;
 
     setId(id): void {
@@ -28,17 +28,17 @@ export class User {
     }
 
     setName(name): void {
-        this.nome = name;
+        this.name = name;
     }
 
     getName(): string {
-        return this.nome;
+        return this.name;
     }
 
     clone(clone): void {
         this.setId(clone.id);
         this.setEmail(clone.email);
-        this.setName(clone.nome);
+        this.setName(clone.name);
     }
     
     public validPostData() {

@@ -9,7 +9,7 @@ export namespace PostgreSQL {
         public getAll(): string {
             return `SELECT *
                     FROM t_user
-                    ORDER BY nome;`;
+                    ORDER BY name;`;
         }
 
         public get(model: User): string {

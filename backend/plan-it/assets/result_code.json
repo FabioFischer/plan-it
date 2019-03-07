@@ -1,0 +1,12 @@
+[
+    {"id": "SUCCESSFUL", "code":"00", "description":"successful requisition"},
+    {"id": "UNMAPPED_ERROR", "code":"10", "description":"unmapped application error"},
+    {"id": "UNATHENTICATED", "code":"10-0001", "description":"unauthenticated requisition"},
+    {"id": "INVALID_CREDENTIALS", "code":"10-0002", "description":"invalid credentials"},
+    {"id": "MODEL_ERROR", "code":"11", "description":"default data model error"},
+    {"id": "MODEL_EXCEPTION", "code":"11-0001", "description":"default data model exception"},
+    {"id": "DATABASE_ERROR", "code":"12", "description":"default database error"},
+    {"id": "DB_NO_ROWS_AFFECTED", "code":"12-0001", "description":"database error - no rows affected"},
+    {"id": "DB_MULTIPLE_ROWS_AFFECTED", "code":"12-0002", "description":"database error - multiple rows affected"},
+    {"id": "DB_OBJECT_VIOLATION", "code":"12-0003", "description":"database error - object violation"}
+]

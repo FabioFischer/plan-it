@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 
-import { GenericRestResultCodes, GenericDBRest } from './generic.rest';
+import { GenericDBRest, getResultCode } from './generic.rest';
 import { AuthenticationHelper } from '../core/authentication-manager';
 import { Authentication } from '../model/authentication.model';
 import { User } from '../model/user.model';
@@ -14,14 +14,18 @@ export class AuthenticationRouter extends GenericDBRest {
     }
 
     public init() {
-        this.router.post('/login', this.login);
-        this.router.post('/logout', this.logout);
-        this.router.get('/token', this.encapsulatedAuthenticatior, this.token);
-        this.router.put('/change_password', this.encapsulatedAuthenticatior, this.changePassword);
+        this.router.post('/login', this.login, this.postRequisitionHandler);
+        this.router.post('/logout', this.logout, this.postRequisitionHandler);
+        this.router.get('/token', this.authenticationHandler, this.token, this.postRequisitionHandler);
+        this.router.put('/change_password', this.authenticationHandler, this.changePassword, this.postRequisitionHandler);
     }
 
-    public encapsulatedAuthenticatior(req, res, next) {
+    public authenticationHandler(req, res, next) {
         return AuthenticationRouter.authenticator(req, res, next);
+    }
+
+    public postRequisitionHandler(req, res, next) {
+        return AuthenticationRouter.requisitionLogger(req, res, next);
     }
 
     public async setupSQLProvider(namespace){       
@@ -50,13 +54,13 @@ export class AuthenticationRouter extends GenericDBRest {
         try {
             model.clone(data);
         } catch (e) {
-            throw {exception: e, errorCode: GenericRestResultCodes.RESULT_CODE_MODEL_ERROR};
+            throw {exception: e, errorCode: getResultCode('MODEL_ERROR')};
         }
         return model;
     }
 
     public async login(req: Request, res: Response, next: NextFunction) {
-        await AuthenticationRouter.encapsulatedRequest(req, res, async () => {
+        await AuthenticationRouter.encapsulatedRequest(req, res, next, async () => {
             let authenticatedModel = new Authentication();
             let user = new User();
             let reqBody = req.body.data;
@@ -69,7 +73,7 @@ export class AuthenticationRouter extends GenericDBRest {
 
                 user.setEmail(reqBody.email)
             } catch(e) {
-                throw {exception: e, errorCode: GenericRestResultCodes.RESULT_CODE_MODEL_ERROR};
+                throw {exception: e, errorCode: getResultCode('MODEL_EXCEPTION')};
             }
             try {
                 dbRes = await AuthenticationRouter.getDBConnector().runSQL(AuthenticationRouter.getSQLProvider().getUserLogin(user), 
@@ -84,7 +88,7 @@ export class AuthenticationRouter extends GenericDBRest {
                     throw 'User authenticated model not found';
                 }
             } catch(e) {
-                throw {exception: e, errorCode: GenericRestResultCodes.RESULT_CODE_LOGIN_INVALID_CREDENTIALS};
+                throw {exception: e, errorCode: getResultCode('INVALID_CREDENTIALS')};
             }
 
             try {
@@ -114,22 +118,22 @@ export class AuthenticationRouter extends GenericDBRest {
                 let normalizedModel = await AuthenticationRouter.mergeDependencies(user);
                 AuthenticationRouter.appendResponseHeader(res, process.env.TOKEN_HEADER_DEFINITION, AuthenticationHelper.createToken(normalizedModel));
             } catch (e) {
-                throw {exception: e, errorCode: GenericRestResultCodes.RESULT_CODE_LOGIN_INVALID_CREDENTIALS};
+                throw {exception: e, errorCode: getResultCode('INVALID_CREDENTIALS')};
             }
 
             /**
              * Set the requisition User as the current login model
              */
             try {
-                await AuthenticationRouter.setAuthenticatedUser(req, user);
+                await AuthenticationRouter.setAccessToken(req, user);
             } catch(e) {
-                throw {exception: e, errorCode: GenericRestResultCodes.RESULT_CODE_LOGIN_UNAUTHENTICATED};
+                throw {exception: e, errorCode: getResultCode('INVALID_CREDENTIALS')};
             }
         });
     }
 
     public async logout(req: Request, res: Response, next: NextFunction) {
-        await AuthenticationRouter.encapsulatedRequest(req, res, async () => {
+        await AuthenticationRouter.encapsulatedRequest(req, res, next, async () => {
             /**
              * Does nothing right now
              */
@@ -138,22 +142,18 @@ export class AuthenticationRouter extends GenericDBRest {
     }
 
     public async token(req: Request, res: Response, next: NextFunction) {
-        await AuthenticationRouter.encapsulatedRequest(req, res, async () => {
+        await AuthenticationRouter.encapsulatedRequest(req, res, next, async () => {
             let model: User;
-            try {
-                /*
-                * Generate new signed token
-                */
-                AuthenticationRouter.appendResponseHeader(res, process.env.TOKEN_HEADER_DEFINITION, AuthenticationHelper.createToken(model));
-            } catch (e) {
-                throw {exception: e, errorCode: GenericRestResultCodes.RESULT_CODE_GENERIC_ERROR};
-            }
+            /*
+            * Generate new signed token
+            */
+            AuthenticationRouter.appendResponseHeader(res, process.env.TOKEN_HEADER_DEFINITION, AuthenticationHelper.createToken(model));
             return AuthenticationRouter.mergeDependencies(model);
         });
     }
 
     public async changePassword(req: Request, res: Response, next: NextFunction) {
-        await AuthenticationRouter.encapsulatedRequest(req, res, async () => {
+        await AuthenticationRouter.encapsulatedRequest(req, res, next, async () => {
             let dbRes;
             let model: Authentication;
             let rowCount: number;
@@ -170,7 +170,7 @@ export class AuthenticationRouter extends GenericDBRest {
                     throw 'User not found';
                 }
             } catch(e) {
-                throw {exception: e, errorCode: GenericRestResultCodes.RESULT_CODE_LOGIN_INVALID_CREDENTIALS};
+                throw {exception: e, errorCode: getResultCode('UNATHENTICATED')};
             }
 
             try {
@@ -182,7 +182,7 @@ export class AuthenticationRouter extends GenericDBRest {
                 }
                 model.clone(dbRes);
             } catch(e) {
-                throw {exception: e, errorCode: GenericRestResultCodes.RESULT_CODE_LOGIN_INVALID_CREDENTIALS};
+                throw {exception: e, errorCode: getResultCode('INVALID_CREDENTIALS')};
             }
 
             /** Validate previous password */
@@ -191,7 +191,7 @@ export class AuthenticationRouter extends GenericDBRest {
                     throw 'Invalid Credentials';
                 }
             } catch (e) {
-                throw {exception: e, errorCode: GenericRestResultCodes.RESULT_CODE_LOGIN_INVALID_CREDENTIALS};
+                throw {exception: e, errorCode: getResultCode('INVALID_CREDENTIALS')};
             }
 
             /** Insert authentication data */

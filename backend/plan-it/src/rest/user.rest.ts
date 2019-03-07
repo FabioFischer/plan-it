@@ -1,29 +1,31 @@
 import { Request, Response, NextFunction } from 'express';
+import { GenericDBRest, getResultCode } from './generic.rest';
 
-import { GenericRestResultCodes, GenericDBRest } from './generic.rest';
 import { AuthenticationHelper } from '../core/authentication-manager';
 import { Authentication } from '../model/authentication.model';
 import { User } from '../model/user.model';
 
 export class UserRouter extends GenericDBRest {
-
-    private static RESULT_CODE_DATA_VALID_ERROR: string = '20';
  
     constructor() {
         super('user-sql-provider');
     }
 
     public init() {
-        this.router.get('/', this.encapsulatedAuthenticatior, this.getAll);
-        this.router.get('/:id', this.encapsulatedAuthenticatior, this.get);
-        this.router.post('/', this.encapsulatedAuthenticatior, this.post);
-        this.router.post('/returning_object', this.encapsulatedAuthenticatior, this.postReturningObject);
-        this.router.put('/', this.encapsulatedAuthenticatior, this.put);
-        this.router.delete('/:id', this.encapsulatedAuthenticatior, this.delete);
+        this.router.get('/', this.authenticationHandler, this.getAll, this.postRequisitionHandler);
+        this.router.get('/:id', this.authenticationHandler, this.get, this.postRequisitionHandler);
+        this.router.post('/', this.authenticationHandler, this.post, this.postRequisitionHandler);
+        this.router.post('/returning_object', this.authenticationHandler, this.postReturningObject, this.postRequisitionHandler);
+        this.router.put('/', this.authenticationHandler, this.put, this.postRequisitionHandler);
+        this.router.delete('/:id', this.authenticationHandler, this.delete, this.postRequisitionHandler);
     }
 
-    public encapsulatedAuthenticatior(req, res, next) {
-        return UserRouter.authenticator(req, res, next);
+    public async authenticationHandler(req: Request, res: Response, next: NextFunction) {
+        return await UserRouter.authenticator(req, res, next);
+    }
+
+    public async postRequisitionHandler(req: Request, res: Response, next: NextFunction) {
+        return await UserRouter.requisitionLogger(req, res, next);
     }
 
     public async setupSQLProvider(namespace){       
@@ -48,20 +50,18 @@ export class UserRouter extends GenericDBRest {
 
     public static async mergeDependencies(data): Promise<any> {
         let model = new User();
-        let dbRes;
         try {
             model.clone(data);
         } catch (e) {
-            throw {exception: e, errorCode: GenericRestResultCodes.RESULT_CODE_MODEL_ERROR};
+            throw {exception: e, errorCode: getResultCode('MODEL_ERROR')};
         }
-
-        return model;
+        return {id: 3, descrip: 'TESTE'};
     }
 
     public async getAll(req: Request, res: Response, next: NextFunction) {
         // Verify if there is any optional parameters on req
         if (Object.keys(req.query).length > 0) {
-            await UserRouter.encapsulatedRequest(req, res, async () => {
+            await UserRouter.encapsulatedRequest(req, res, next, async () => {
                 let model: User;
                 let dbRes;
                 let data = [];
@@ -71,7 +71,7 @@ export class UserRouter extends GenericDBRest {
                     model = new User();
                     await model.clone(req.query);
                 } catch(e) {
-                    throw {exception: e, errorCode: GenericRestResultCodes.RESULT_CODE_MODEL_ERROR};
+                    throw {exception: e, errorCode: getResultCode('MODEL_ERROR')};
                 }         
                 // returns data from table based on optional parameters
                 try {
@@ -92,7 +92,7 @@ export class UserRouter extends GenericDBRest {
                 return data;
             });
         } else {
-            await UserRouter.encapsulatedRequest(req, res, async () => {
+            await UserRouter.encapsulatedRequest(req, res, next, async () => {
                 let dbRes;
                 let data = [];
                 // returns all the data from table
@@ -117,7 +117,7 @@ export class UserRouter extends GenericDBRest {
     }
 
     public async get(req: Request, res: Response, next: NextFunction) {      
-        await UserRouter.encapsulatedRequest(req, res, async () => {
+        await UserRouter.encapsulatedRequest(req, res, next, async () => {
             let dbRes;
             let model: User;
             
@@ -126,7 +126,7 @@ export class UserRouter extends GenericDBRest {
                 model = new User();
                 model.setId(req.params.id);
             } catch(e) {
-                throw {exception: e, errorCode: GenericRestResultCodes.RESULT_CODE_MODEL_ERROR};
+                throw {exception: e, errorCode: getResultCode('MODEL_ERROR')};
             }
 
             //query
@@ -142,7 +142,7 @@ export class UserRouter extends GenericDBRest {
     }
 
     public async post(req: Request, res: Response, next: NextFunction) {
-        await UserRouter.encapsulatedRequest(req, res, async () => {
+        await UserRouter.encapsulatedRequest(req, res, next, async () => {
             let model: User;
             let rowCount: number;
             let inserted = [];
@@ -152,13 +152,13 @@ export class UserRouter extends GenericDBRest {
                 model = new User();
                 model.clone(reqBody);
             } catch(e) {
-                throw {exception: e, errorCode: GenericRestResultCodes.RESULT_CODE_MODEL_ERROR};
+                throw {exception: e, errorCode: getResultCode('MODEL_ERROR')};
             }
             //validate object
             try {
                 model.validPostData();
             } catch(e) {
-                throw {exception: e, errorCode: UserRouter.RESULT_CODE_DATA_VALID_ERROR};
+                throw {exception: e, errorCode: getResultCode('MODEL_EXCEPTION')};
             }
             // validate UK's
             let validationModels = [];
@@ -177,7 +177,7 @@ export class UserRouter extends GenericDBRest {
                     throw {exception: e, errorCode: UserRouter.getDBConnector().getDBErrorCode(e)};
                 }
                 //validate return - rowCount > 0
-                UserRouter.validateRowCount(rowCount > 0, GenericRestResultCodes.RESULT_CODE_DB_OBJECT_ALREADY_EXISTS);                
+                UserRouter.validateRowCount(rowCount > 0, getResultCode('DB_OBJECT_VIOLATION'));
             }
 
             //query
@@ -187,16 +187,14 @@ export class UserRouter extends GenericDBRest {
             } catch(e) {
                 throw {exception: e, errorCode: UserRouter.getDBConnector().getDBErrorCode(e)};
             }
-            //validate return - rowCount > 1
-            UserRouter.validateRowCount(inserted.length > 1, GenericRestResultCodes.RESULT_CODE_DB_MORE_THAN_ONE_ROW);
-            //validate return - rowCount <= 0
-            UserRouter.validateRowCount(inserted.length <= 0, GenericRestResultCodes.RESULT_CODE_DB_LESS_EQUAL_ZERO_ROW);
+            UserRouter.validateRowCount(inserted.length > 1, getResultCode('DB_MULTIPLE_ROWS_AFFECTED'));
+            UserRouter.validateRowCount(inserted.length <= 0, getResultCode('DB_NO_ROWS_AFFECTED'));
 
             let insertedId = inserted[0].id;
             try {
                 if (!reqBody.password || reqBody.password == '') throw 'Requisition body must contain the <password> property'
             } catch(e) {
-                throw {exception: e, errorCode: GenericRestResultCodes.RESULT_CODE_MODEL_ERROR};
+                throw {exception: e, errorCode: getResultCode('MODEL_EXCEPTION')};
             }
 
             /** Insert authentication data */
@@ -209,7 +207,7 @@ export class UserRouter extends GenericDBRest {
                     user_id: insertedId
                 });
             } catch(e) {
-                throw {exception: e, errorCode: UserRouter.RESULT_CODE_DATA_VALID_ERROR};
+                throw {exception: e, errorCode: getResultCode('MODEL_ERROR')};
             }
             try {
                 rowCount = await UserRouter.getDBConnector().runSQL(UserRouter.getSQLProvider().postUserAuthentication(authenticationModel), 
@@ -218,13 +216,13 @@ export class UserRouter extends GenericDBRest {
             } catch(e) {
                 throw {exception: e, errorCode: UserRouter.getDBConnector().getDBErrorCode(e)};
             }
-            UserRouter.validateRowCount(rowCount > 1, GenericRestResultCodes.RESULT_CODE_DB_MORE_THAN_ONE_ROW);
-            UserRouter.validateRowCount(rowCount <= 0, GenericRestResultCodes.RESULT_CODE_DB_LESS_EQUAL_ZERO_ROW);
+            UserRouter.validateRowCount(rowCount > 1, getResultCode('DB_MULTIPLE_ROWS_AFFECTED'));
+            UserRouter.validateRowCount(rowCount <= 0, getResultCode('DB_NO_ROWS_AFFECTED'));
         }); 
     }
 
     public async postReturningObject(req: Request, res: Response, next: NextFunction) {
-        await UserRouter.encapsulatedRequest(req, res, async () => {
+        await UserRouter.encapsulatedRequest(req, res, next, async () => {
             let dbRes;
             let model: User;
             let rowCount: number;
@@ -237,13 +235,13 @@ export class UserRouter extends GenericDBRest {
                 model = new User();
                 model.clone(reqBody);
             } catch(e) {
-                throw {exception: e, errorCode: GenericRestResultCodes.RESULT_CODE_MODEL_ERROR};
+                throw {exception: e, errorCode: getResultCode('MODEL_ERROR')};
             }
             //validate object
             try {
                 model.validPostData();
             } catch(e) {
-                throw {exception: e, errorCode: UserRouter.RESULT_CODE_DATA_VALID_ERROR};
+                throw {exception: e, errorCode: getResultCode('MODEL_EXCEPTION')};
             }
             // validate PK's
             let validationModels = [];
@@ -262,7 +260,7 @@ export class UserRouter extends GenericDBRest {
                     throw {exception: e, errorCode: UserRouter.getDBConnector().getDBErrorCode(e)};
                 }
                 //validate return - rowCount > 0
-                UserRouter.validateRowCount(rowCount > 0, GenericRestResultCodes.RESULT_CODE_DB_OBJECT_ALREADY_EXISTS);                
+                UserRouter.validateRowCount(rowCount > 0, getResultCode('DB_OBJECT_VIOLATION'));               
             }
 
             //query
@@ -272,16 +270,14 @@ export class UserRouter extends GenericDBRest {
             } catch(e) {
                 throw {exception: e, errorCode: UserRouter.getDBConnector().getDBErrorCode(e)};
             }
-            //validate return - rowCount > 1
-            UserRouter.validateRowCount(inserted.length > 1, GenericRestResultCodes.RESULT_CODE_DB_MORE_THAN_ONE_ROW);
-            //validate return - rowCount <= 0
-            UserRouter.validateRowCount(inserted.length <= 0, GenericRestResultCodes.RESULT_CODE_DB_LESS_EQUAL_ZERO_ROW);
+            UserRouter.validateRowCount(inserted.length > 1, getResultCode('DB_MULTIPLE_ROWS_AFFECTED'));
+            UserRouter.validateRowCount(inserted.length <= 0, getResultCode('DB_NO_ROWS_AFFECTED'));
 
             let insertedId = inserted[0].id;
             try {
                 if (!reqBody.password || reqBody.password == '') throw 'Requisition body must contain the <password> property';
             } catch(e) {
-                throw {exception: e, errorCode: GenericRestResultCodes.RESULT_CODE_MODEL_ERROR};
+                throw {exception: e, errorCode: getResultCode('MODEL_EXCEPTION')};
             }
 
             /** Insert authentication data */
@@ -294,7 +290,7 @@ export class UserRouter extends GenericDBRest {
                     user_id: insertedId
                 });
             } catch(e) {
-                throw {exception: e, errorCode: UserRouter.RESULT_CODE_DATA_VALID_ERROR};
+                throw {exception: e, errorCode: getResultCode('MODEL_ERROR')};
             }
             try {
                 rowCount = await UserRouter.getDBConnector().runSQL(UserRouter.getSQLProvider().postUserAuthentication(authenticationModel), 
@@ -303,15 +299,15 @@ export class UserRouter extends GenericDBRest {
             } catch(e) {
                 throw {exception: e, errorCode: UserRouter.getDBConnector().getDBErrorCode(e)};
             }
-            UserRouter.validateRowCount(rowCount > 1, GenericRestResultCodes.RESULT_CODE_DB_MORE_THAN_ONE_ROW);
-            UserRouter.validateRowCount(rowCount <= 0, GenericRestResultCodes.RESULT_CODE_DB_LESS_EQUAL_ZERO_ROW);
+            UserRouter.validateRowCount(rowCount > 1, getResultCode('DB_MULTIPLE_ROWS_AFFECTED'));
+            UserRouter.validateRowCount(rowCount <= 0, getResultCode('DB_NO_ROWS_AFFECTED'));
 
             // Get inserted object
             try {
                 insertedModel = new User()
                 insertedModel.setId(insertedId);
             } catch(e) {
-                throw {exception: e, errorCode: GenericRestResultCodes.RESULT_CODE_MODEL_ERROR};
+                throw {exception: e, errorCode: getResultCode('MODEL_ERROR')};
             }
             // query
             try {
@@ -326,9 +322,8 @@ export class UserRouter extends GenericDBRest {
     }
 
     public async put(req: Request, res: Response, next: NextFunction) {
-        await UserRouter.encapsulatedRequest(req, res, async () => {
+        await UserRouter.encapsulatedRequest(req, res, next, async () => {
             let model: User;
-            let equipments = [];
             let rowCount: number;
             let dbRes;
 
@@ -339,13 +334,13 @@ export class UserRouter extends GenericDBRest {
                 model = new User();
                 model.clone(reqBody);
             } catch(e) {
-                throw {exception: e, errorCode: GenericRestResultCodes.RESULT_CODE_MODEL_ERROR};
+                throw {exception: e, errorCode: getResultCode('MODEL_ERROR')};
             }
             //validate object
             try {
                 model.validPutData();
             } catch(e) {
-                throw {exception: e, errorCode: UserRouter.RESULT_CODE_DATA_VALID_ERROR};
+                throw {exception: e, errorCode: getResultCode('MODEL_EXCEPTION')};
             }
             // validate PK's
             let validationModels = [];
@@ -364,7 +359,7 @@ export class UserRouter extends GenericDBRest {
                     throw {exception: e, errorCode: UserRouter.getDBConnector().getDBErrorCode(e)};
                 }
                 //validate return - rowCount > 0
-                UserRouter.validateRowCount(rowCount > 0, GenericRestResultCodes.RESULT_CODE_DB_OBJECT_ALREADY_EXISTS);                
+                UserRouter.validateRowCount(rowCount > 0, getResultCode('DB_OBJECT_VIOLATION'));                 
             }
 
             //query
@@ -375,10 +370,8 @@ export class UserRouter extends GenericDBRest {
             } catch(e) {
                 throw {exception: e, errorCode: UserRouter.getDBConnector().getDBErrorCode(e)};
             }
-            //validate return - rowCount > 1
-            UserRouter.validateRowCount(rowCount > 1, GenericRestResultCodes.RESULT_CODE_DB_MORE_THAN_ONE_ROW);
-            //validate return - rowCount <= 0
-            UserRouter.validateRowCount(rowCount <= 0, GenericRestResultCodes.RESULT_CODE_DB_LESS_EQUAL_ZERO_ROW);
+            UserRouter.validateRowCount(rowCount > 1, getResultCode('DB_MULTIPLE_ROWS_AFFECTED'));
+            UserRouter.validateRowCount(rowCount <= 0, getResultCode('DB_NO_ROWS_AFFECTED'));
             
 
             if (reqBody.password && reqBody.password != '') {
@@ -401,7 +394,7 @@ export class UserRouter extends GenericDBRest {
                         authenticationModel.setHash(hashedPassword.hash);
                         authenticationModel.setSalt(hashedPassword.salt);
                     } catch(e) {
-                        throw {exception: e, errorCode: UserRouter.RESULT_CODE_DATA_VALID_ERROR};
+                        throw {exception: e, errorCode: getResultCode('MODEL_ERROR')};
                     }
                     try {
                         rowCount = await UserRouter.getDBConnector().runSQL(UserRouter.getSQLProvider().putUserAuthentication(authenticationModel), 
@@ -410,8 +403,8 @@ export class UserRouter extends GenericDBRest {
                     } catch(e) {
                         throw {exception: e, errorCode: UserRouter.getDBConnector().getDBErrorCode(e)};
                     }
-                    UserRouter.validateRowCount(rowCount > 1, GenericRestResultCodes.RESULT_CODE_DB_MORE_THAN_ONE_ROW);
-                    UserRouter.validateRowCount(rowCount <= 0, GenericRestResultCodes.RESULT_CODE_DB_LESS_EQUAL_ZERO_ROW);
+                    UserRouter.validateRowCount(rowCount > 1, getResultCode('DB_MULTIPLE_ROWS_AFFECTED'));
+                    UserRouter.validateRowCount(rowCount <= 0, getResultCode('DB_NO_ROWS_AFFECTED'));
                 } else {
                     /** Insert authentication data */
                     try {
@@ -421,7 +414,7 @@ export class UserRouter extends GenericDBRest {
                             user_id: model.getId()
                         });
                     } catch(e) {
-                        throw {exception: e, errorCode: UserRouter.RESULT_CODE_DATA_VALID_ERROR};
+                        throw {exception: e, errorCode: getResultCode('MODEL_ERROR')};
                     }
                     try {
                         rowCount = await UserRouter.getDBConnector().runSQL(UserRouter.getSQLProvider().postUserAuthentication(authenticationModel), 
@@ -430,15 +423,15 @@ export class UserRouter extends GenericDBRest {
                     } catch(e) {
                         throw {exception: e, errorCode: UserRouter.getDBConnector().getDBErrorCode(e)};
                     }
-                    UserRouter.validateRowCount(rowCount > 1, GenericRestResultCodes.RESULT_CODE_DB_MORE_THAN_ONE_ROW);
-                    UserRouter.validateRowCount(rowCount <= 0, GenericRestResultCodes.RESULT_CODE_DB_LESS_EQUAL_ZERO_ROW);
+                    UserRouter.validateRowCount(rowCount > 1, getResultCode('DB_MULTIPLE_ROWS_AFFECTED'));
+                    UserRouter.validateRowCount(rowCount <= 0, getResultCode('DB_NO_ROWS_AFFECTED'));
                 }
             }
         });  
     }
     
     public async delete(req: Request, res: Response, next: NextFunction) {
-        await UserRouter.encapsulatedRequest(req, res, async () => {
+        await UserRouter.encapsulatedRequest(req, res, next, async () => {
             let model: User;
             let rowCount: number;
 
@@ -447,7 +440,7 @@ export class UserRouter extends GenericDBRest {
                 model = new User();
                 model.setId(req.params.id);
             } catch(e) {
-                throw {exception: e, errorCode: GenericRestResultCodes.RESULT_CODE_MODEL_ERROR};
+                throw {exception: e, errorCode: getResultCode('MODEL_ERROR')};
             }
 
             // delete pending relations
@@ -466,10 +459,8 @@ export class UserRouter extends GenericDBRest {
             } catch(e) {
                 throw {exception: e, errorCode: UserRouter.getDBConnector().getDBErrorCode(e)};
             }
-            //validate return - rowCount > 1
-            UserRouter.validateRowCount(rowCount > 1, GenericRestResultCodes.RESULT_CODE_DB_MORE_THAN_ONE_ROW);
-            //validate return - rowCount <= 0
-            UserRouter.validateRowCount(rowCount <= 0, GenericRestResultCodes.RESULT_CODE_DB_LESS_EQUAL_ZERO_ROW);
+            UserRouter.validateRowCount(rowCount > 1, getResultCode('DB_MULTIPLE_ROWS_AFFECTED'));
+            UserRouter.validateRowCount(rowCount <= 0, getResultCode('DB_NO_ROWS_AFFECTED'));
         });  
     }
 }
