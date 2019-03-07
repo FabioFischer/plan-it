@@ -1,5 +1,5 @@
 import { DatabaseConnector, DatabaseConnectionType, QueryCacheElement } from "./database-connector";
-import { GenericRestResultCodes } from "../../rest/generic.rest";
+import { getResultCode } from "../../rest/generic.rest";
 
 const SQL_PROVIDER_FOLDER: string = 'postgresql';
 
@@ -79,22 +79,22 @@ export class PostgreSQLConnector extends DatabaseConnector {
         if (e && e.code){
             switch (e.code){
                 case '23000':
-                    return DatabaseConnector.RESULT_CODE_DB_VIOLATION_INTEGRITY;
+                    return getResultCode('DB_INTEGRITY_VIOLATION');
                 case '23001':
-                    return DatabaseConnector.RESULT_CODE_DB_VIOLATION_RESTRICT;
+                    return getResultCode('DB_RESTRICTION_VIOLATION');
                 case '23502':
-                    return DatabaseConnector.RESULT_CODE_DB_VIOLATION_NOT_NULL;
+                    return getResultCode('DB_NULLABLE_VIOLATION');
                 case '23503':
-                    return DatabaseConnector.RESULT_CODE_DB_VIOLATION_FK;
+                    return getResultCode('DB_FK_VIOLATION');
                 case '23505':
-                    return DatabaseConnector.RESULT_CODE_DB_VIOLATION_PK;
+                    return getResultCode('DB_PK_VIOLATION');
                 case '23514':
-                    return DatabaseConnector.RESULT_CODE_DB_VIOLATION_CK;
+                    return getResultCode('DB_CK_VIOLATION');
                 case '23P01':
-                    return DatabaseConnector.RESULT_CODE_DB_VIOLATION_EXCLUSION;
+                    return getResultCode('DB_EXCLUSIVE_VIOLATION');
             }
         }
-        return GenericRestResultCodes.RESULT_CODE_DB_ERROR;
+        return getResultCode("DATABASE_ERROR");
     }
 
     public async runSQL(sql: string, returnType: Function, cacheId?: string) {

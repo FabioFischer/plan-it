@@ -5,18 +5,9 @@ export enum DatabaseConnectionType {POSTGRESQL = 'POSTGRESQL'};
 
 export abstract class DatabaseConnector {
 
-    public static RESULT_CODE_DB_VIOLATION_INTEGRITY: string = '12-2000'
-    public static RESULT_CODE_DB_VIOLATION_RESTRICT: string = '12-2001'
-    public static RESULT_CODE_DB_VIOLATION_NOT_NULL: string = '12-2002'
-    public static RESULT_CODE_DB_VIOLATION_FK: string = '12-2003'
-    public static RESULT_CODE_DB_VIOLATION_PK: string = '12-2004'
-    public static RESULT_CODE_DB_VIOLATION_CK: string = '12-2005'
-    public static RESULT_CODE_DB_VIOLATION_EXCLUSION: string = '12-2006'
-
     private sqlConnectorType: DatabaseConnectionType;
     private sqlProviderFolder: string;
     private queryCache: Map<string, QueryCache>;
-
 
     constructor (sqlConnectorType: DatabaseConnectionType, sqlProviderFolder: string){
         this.setSQLConnectorType(sqlConnectorType);

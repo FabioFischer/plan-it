@@ -49,11 +49,13 @@ export class UserRouter extends GenericDBRest {
     }
 
     public static async mergeDependencies(data): Promise<any> {
-        let model = new User();
-        try {
-            model.clone(data);
-        } catch (e) {
-            throw {exception: e, errorCode: getResultCode('MODEL_ERROR')};
+        if (data) {
+            let model = new User();
+            try {
+                model.clone(data);
+            } catch (e) {
+                throw {exception: e, errorCode: getResultCode('MODEL_ERROR')};
+            }
         }
         return {id: 3, descrip: 'TESTE'};
     }

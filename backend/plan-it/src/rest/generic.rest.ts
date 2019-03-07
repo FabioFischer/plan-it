@@ -41,7 +41,7 @@ export abstract class GenericRest {
             /*
             const token = req.get(process.env.TOKEN_HEADER_DEFINITION);
             const isUnauthenticatedResponse = () => {
-                this.generateResponse(res, GenericRestResultCodes.RESULT_CODE_LOGIN_UNAUTHENTICATED, null);
+                this.generateResponse(res, getResultCode("UNATHENTICATED"), null);
             }
             if (!token) {
                 isUnauthenticatedResponse();
@@ -67,9 +67,11 @@ export abstract class GenericRest {
 
     /** */
     public static async requisitionLogger(req: Request, res: Response, next: any) {
+        /*
         console.log(req)
         console.log('---------')
         console.log(res)
+        */
         return;
         try {
 

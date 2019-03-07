@@ -40,11 +40,12 @@ CREATE TABLE t_requisition_log (
 	begin_date			TIMESTAMP WITHOUT TIME ZONE NOT NULL,
 	end_date			TIMESTAMP WITHOUT TIME ZONE NOT NULL,
 	user_id			BIGINT NOT NULL,
+	method				VARCHAR(32) NOT NULL,
     	endpoint			VARCHAR(128) NOT NULL,
     	params				VARCHAR(255),
     	req_body			VARCHAR,
-	resp_code			VARCHAR(128),
-    	resp_body			VARCHAR,
+	res_code			VARCHAR(128),
+    	res_body			VARCHAR,
     	CONSTRAINT pk_requisition_log
        PRIMARY KEY (id),
 	CONSTRAINT fk_requisition_user

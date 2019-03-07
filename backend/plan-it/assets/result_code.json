@@ -8,5 +8,12 @@
     {"id": "DATABASE_ERROR", "code":"12", "description":"default database error"},
     {"id": "DB_NO_ROWS_AFFECTED", "code":"12-0001", "description":"database error - no rows affected"},
     {"id": "DB_MULTIPLE_ROWS_AFFECTED", "code":"12-0002", "description":"database error - multiple rows affected"},
-    {"id": "DB_OBJECT_VIOLATION", "code":"12-0003", "description":"database error - object violation"}
+    {"id": "DB_OBJECT_VIOLATION", "code":"12-0003", "description":"database error - object violation"},
+    {"id": "DB_INTEGRITY_VIOLATION", "code":"12-0004", "description":"database error - integrity violation"},
+    {"id": "DB_RESTRICTION_VIOLATION", "code":"12-0005", "description":"database error - restriction violation"},
+    {"id": "DB_NULLABLE_VIOLATION", "code":"12-0006", "description":"database error - nullable violation"},
+    {"id": "DB_FK_VIOLATION", "code":"12-0007", "description":"database error - foreign key violation"},
+    {"id": "DB_PK_VIOLATION", "code":"12-0008", "description":"database error - primary key violation"},
+    {"id": "DB_CK_VIOLATION", "code":"12-0009", "description":"database error - candidate key violation"},
+    {"id": "DB_EXCLUSIVE_VIOLATION", "code":"12-0010", "description":"database error - exclusive violation"}
 ]
