@@ -39,11 +39,12 @@ CREATE TABLE t_requisition_log (
 	id				BIGSERIAL,
 	begin_date			TIMESTAMP WITHOUT TIME ZONE NOT NULL,
 	end_date			TIMESTAMP WITHOUT TIME ZONE NOT NULL,
-	user_id			BIGINT NOT NULL,
+	user_id			BIGINT,
 	method				VARCHAR(32) NOT NULL,
     	endpoint			VARCHAR(128) NOT NULL,
     	params				VARCHAR(255),
     	req_body			VARCHAR,
+	res_status			VARCHAR(32),
 	res_code			VARCHAR(128),
     	res_body			VARCHAR,
     	CONSTRAINT pk_requisition_log

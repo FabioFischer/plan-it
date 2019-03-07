@@ -11,6 +11,7 @@ export class RequisitionLog {
 	private endpoint: string;
 	private params: string;
 	private req_body: string;
+	private res_status: string;
 	private res_code: string;
 	private res_body: string;
 
@@ -92,6 +93,14 @@ export class RequisitionLog {
         this.req_body = req_body;
     }
 
+    public getResStatus(): string {
+        return this.res_status;
+    }
+
+    public setResStatus(res_status): void {
+        this.res_status = res_status;
+    }
+
     public getResCode(): string {
         return this.res_code;
     }
@@ -117,12 +126,13 @@ export class RequisitionLog {
         this.setEndPoint(clone.end_point);
         this.setParams(clone.params);
         this.setReqBody(clone.req_body);
+        this.setResStatus(clone.res_status);
         this.setResCode(clone.res_code);
         this.setResBody(clone.res_body);
     }
 }
 
-export class TransactionLogger {
+export class RequisitionLogger {
 
     public static dbRequester: GenericDBRequester;
 
@@ -138,26 +148,22 @@ export class TransactionLogger {
     }
 
     public getDBRequester(){
-        return TransactionLogger.dbRequester;
+        return RequisitionLogger.dbRequester;
     }
 
     public setDBRequester(dbRequester){
-        TransactionLogger.dbRequester = dbRequester;
+        RequisitionLogger.dbRequester = dbRequester;
     }
 
     public static getSQLProvider() {
-        return TransactionLogger.dbRequester.sqlProvider;
+        return RequisitionLogger.dbRequester.sqlProvider;
     }
 
     public static getDBConnector() {
-        return TransactionLogger.dbRequester.dbConnector;
+        return RequisitionLogger.dbRequester.dbConnector;
     }
     
     public async log(requisitionLogModel: RequisitionLog) {
-        try {
-            await TransactionLogger.getDBConnector().runSQL(TransactionLogger.getSQLProvider().post(requisitionLogModel), TransactionLogger.getDBConnector().returnAllRows);
-        } catch(e) {
-            throw {exception: e, errorCode: TransactionLogger.getDBConnector().getDBErrorCode(e)};
-        }
+        await RequisitionLogger.getDBConnector().runSQL(RequisitionLogger.getSQLProvider().post(requisitionLogModel), RequisitionLogger.getDBConnector().returnAllRows);
     }    
 } 

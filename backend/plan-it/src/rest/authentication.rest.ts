@@ -14,18 +14,22 @@ export class AuthenticationRouter extends GenericDBRest {
     }
 
     public init() {
-        this.router.post('/login', this.login, this.postRequisitionHandler);
-        this.router.post('/logout', this.logout, this.postRequisitionHandler);
-        this.router.get('/token', this.authenticationHandler, this.token, this.postRequisitionHandler);
-        this.router.put('/change_password', this.authenticationHandler, this.changePassword, this.postRequisitionHandler);
+        this.router.post('/login', this.preRequisitionHandler, this.login, this.postRequisitionHandler);
+        this.router.post('/logout', this.preRequisitionHandler, this.logout, this.postRequisitionHandler);
+        this.router.get('/token', this.preRequisitionHandler, this.authenticationHandler, this.token, this.postRequisitionHandler);
+        this.router.put('/change_password', this.preRequisitionHandler, this.authenticationHandler, this.changePassword, this.postRequisitionHandler);
     }
 
-    public authenticationHandler(req, res, next) {
-        return AuthenticationRouter.authenticator(req, res, next);
+    public async preRequisitionHandler(req: Request, res: Response, next: NextFunction) {
+        return await AuthenticationRouter.startRequisition(req, res, next);    
     }
 
-    public postRequisitionHandler(req, res, next) {
-        return AuthenticationRouter.requisitionLogger(req, res, next);
+    public async authenticationHandler(req, res, next) {
+        return await AuthenticationRouter.authenticateRequisition(req, res, next);
+    }
+
+    public async postRequisitionHandler(req, res, next) {
+        return await AuthenticationRouter.requisitionLogger(req, res, next);
     }
 
     public async setupSQLProvider(namespace){       

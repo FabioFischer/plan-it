@@ -4,6 +4,7 @@ import * as jwt from 'jsonwebtoken';
 import { LoggerManager, StaticLogger, LogFrom } from '../core/logger-manager';
 import { GenericDBRequester } from '../database/dbconnector/generic.dbrequester';
 import { User } from '../model/user.model';
+import { RequisitionLog, RequisitionLogger } from '../core/requisition-logger.core';
 
 const restResultCodes = require('../../assets/result_code.json');
 
@@ -19,7 +20,17 @@ export const getResultCode = (id: string): string => {
     } return '10';
 }
 
+/**
+ * 
+ * @param method 
+ */
+export const shouldLogRequisition = (method: string): boolean => {
+    return process.env.LOG_GEN_ALL === 'true' && (method != 'GET' || process.env.LOG_GEN_GET === 'true');
+}
+
 export abstract class GenericRest {
+
+    public static REQUISITION_LOGGER: RequisitionLogger = new RequisitionLogger();
 
     public router: Router;
     
@@ -28,7 +39,7 @@ export abstract class GenericRest {
         this.init();
     }
 
-    public abstract init(); 
+    public abstract init();
 
     /**
      * 
@@ -36,7 +47,29 @@ export abstract class GenericRest {
      * @param res 
      * @param next 
      */
-    public static async authenticator(req: Request, res: Response, next: any) {
+    public static async startRequisition(req: Request, res: Response, next: any) {
+        try {
+            if (shouldLogRequisition(req.method)) {
+                let requisition = new RequisitionLog();
+                requisition.setBeginDate(new Date());
+                res.locals.requisition_log = requisition;
+            }
+            next();
+        } catch(e) {
+            StaticLogger.getLoggerController().getLogger().log('error', e);
+            this.generateResponse(res, 401, getResultCode("UNMAPPED_ERROR"));
+            return;
+        }
+    }
+
+    /**
+     * 
+     * @param req 
+     * @param res 
+     * @param next 
+     */
+    public static async authenticateRequisition(req: Request, res: Response, next: any) {
+        let requisitionLog: RequisitionLog = res.locals.requisition_log;
         try {
             /*
             const token = req.get(process.env.TOKEN_HEADER_DEFINITION);
@@ -57,27 +90,42 @@ export abstract class GenericRest {
             }
             return;
             */
+            //requisitionLog.setUserId(1);
             next();
         } catch(e) {
-            StaticLogger.getLoggerController().getLogger().error((e && e.exception ? e.exception.toString() : (e ? e.toString() : e)) + (e && e.stack ? e.stack.toString() : ''));
+            StaticLogger.getLoggerController().getLogger().log('error', e);
             this.generateResponse(res, 401, getResultCode("UNMAPPED_ERROR"));
             return;
         }
     }
 
-    /** */
+    /**
+     * 
+     * @param req 
+     * @param res 
+     * @param next 
+     */
     public static async requisitionLogger(req: Request, res: Response, next: any) {
-        /*
-        console.log(req)
-        console.log('---------')
-        console.log(res)
-        */
-        return;
+        let requisitionLog: RequisitionLog = res.locals.requisition_log;
         try {
-
+            if (res.locals.requisition_log && shouldLogRequisition(req.method)) {
+                requisitionLog.setMethod(req.method);
+                requisitionLog.setEndPoint(req.originalUrl);
+                requisitionLog.setParams(JSON.stringify({
+                    query: req.query,
+                    params: req.params
+                }));
+                requisitionLog.setReqBody(JSON.stringify({
+                    body: req.body
+                }));
+                requisitionLog.setEndDate(new Date());
+                await this.REQUISITION_LOGGER.log(requisitionLog);
+            }
+            next();
         } catch(e) {
-            StaticLogger.getLoggerController().getLogger().error((e && e.exception ? e.exception.toString() : (e ? e.toString() : e)) + (e && e.stack ? e.stack.toString() : ''));
-            return;
+            console.log(e)
+            //StaticLogger.getLoggerController().getLogger().log('error', e);
+            next();
         }
     }
 
@@ -98,29 +146,45 @@ export abstract class GenericRest {
         req[`${process.env.ACCESS_TOKEN_DEFINITION}`] = data;
     }
 
+    /**
+     * 
+     * @param req 
+     * @param res 
+     * @param next 
+     * @param func 
+     */
     public static async encapsulatedRequest(req: Request, res: Response, next: NextFunction, func: Function) {
+        let requisitionLog: RequisitionLog = res.locals.requisition_log;
+        let resultCode = getResultCode("SUCCESSFUL");
         try {
             let data = await func();
-            if (data) {
-                this.generateResponse(res, 200, getResultCode("SUCCESSFUL"), data);
-            } else {
-                this.generateResponse(res, 204, getResultCode("SUCCESSFUL"));
-            }
+            requisitionLog.setResBody(JSON.stringify(data));
+            this.generateResponse(res, 200, resultCode, data);
         } catch(e) {
             console.log(e);
-            StaticLogger.getLoggerController().getLogger().log('error', JSON.stringify(e));
-            this.generateResponse(res, e.status || 500 , e.errorCode);
+            resultCode = e.errorCode || getResultCode("UNMAPPED_ERROR");
+            StaticLogger.getLoggerController().getLogger().log('error', e);
+            this.generateResponse(res, e.status || 500 ,resultCode);
         } finally {
+            requisitionLog.setResStatus(res.statusCode);
+            requisitionLog.setResCode(resultCode);
             if (next) next();
         }
     }
 
+    /**
+     * 
+     * @param res 
+     * @param status 
+     * @param resultCode 
+     * @param data 
+     */
     public static generateResponse(res: Response, status: number, resultCode: string, data?) {
         let resData = {
             result_code: resultCode || getResultCode("UNMAPPED_ERROR")
         };
         if (data) {
-            resData['data'] = data;
+            this.appendIntoData(resData, data, 'data');
         }
         if (status) {
             res.status(status).json(resData);
@@ -129,10 +193,22 @@ export abstract class GenericRest {
         }
     }
 
+    /**
+     * 
+     * @param res 
+     * @param key 
+     * @param value 
+     */
     public static appendResponseHeader(res: Response, key: string, value: any) {
         res.set(key, value);
     }
 
+    /**
+     * 
+     * @param data 
+     * @param other 
+     * @param as 
+     */
     public static appendIntoData(data: any, other: any, as: string): any {
         if (data) {
             data[as] = other;

@@ -12,16 +12,20 @@ export class UserRouter extends GenericDBRest {
     }
 
     public init() {
-        this.router.get('/', this.authenticationHandler, this.getAll, this.postRequisitionHandler);
-        this.router.get('/:id', this.authenticationHandler, this.get, this.postRequisitionHandler);
-        this.router.post('/', this.authenticationHandler, this.post, this.postRequisitionHandler);
-        this.router.post('/returning_object', this.authenticationHandler, this.postReturningObject, this.postRequisitionHandler);
-        this.router.put('/', this.authenticationHandler, this.put, this.postRequisitionHandler);
-        this.router.delete('/:id', this.authenticationHandler, this.delete, this.postRequisitionHandler);
+        this.router.get('/', this.preRequisitionHandler, this.authenticationHandler, this.getAll, this.postRequisitionHandler);
+        this.router.get('/:id', this.preRequisitionHandler, this.authenticationHandler, this.get, this.postRequisitionHandler);
+        this.router.post('/', this.preRequisitionHandler, this.authenticationHandler, this.post, this.postRequisitionHandler);
+        this.router.post('/returning_object', this.preRequisitionHandler, this.authenticationHandler, this.postReturningObject, this.postRequisitionHandler);
+        this.router.put('/', this.preRequisitionHandler, this.authenticationHandler, this.put, this.postRequisitionHandler);
+        this.router.delete('/:id', this.preRequisitionHandler, this.authenticationHandler, this.delete, this.postRequisitionHandler);
+    }
+
+    public async preRequisitionHandler(req: Request, res: Response, next: NextFunction) {
+        return await UserRouter.startRequisition(req, res, next);    
     }
 
     public async authenticationHandler(req: Request, res: Response, next: NextFunction) {
-        return await UserRouter.authenticator(req, res, next);
+        return await UserRouter.authenticateRequisition(req, res, next);
     }
 
     public async postRequisitionHandler(req: Request, res: Response, next: NextFunction) {
