@@ -57,7 +57,7 @@ export abstract class GenericRest {
             next();
         } catch(e) {
             StaticLogger.getLoggerController().getLogger().log('error', e);
-            this.generateResponse(res, 401, getResultCode("UNMAPPED_ERROR"));
+            this.generateResponse(res, getResultCode("UNMAPPED_ERROR"));
             return;
         }
     }
@@ -94,7 +94,7 @@ export abstract class GenericRest {
             next();
         } catch(e) {
             StaticLogger.getLoggerController().getLogger().log('error', e);
-            this.generateResponse(res, 401, getResultCode("UNMAPPED_ERROR"));
+            this.generateResponse(res, getResultCode("UNMAPPED_ERROR"));
             return;
         }
     }
@@ -159,7 +159,7 @@ export abstract class GenericRest {
         try {
             let data = await func();
             requisitionLog.setResBody(JSON.stringify(data));
-            this.generateResponse(res, 200, resultCode, data);
+            this.generateResponse(res, resultCode, data);
         } catch(e) {
             console.log(e);
             resultCode = e.errorCode || getResultCode("UNMAPPED_ERROR");
@@ -175,22 +175,17 @@ export abstract class GenericRest {
     /**
      * 
      * @param res 
-     * @param status 
      * @param resultCode 
      * @param data 
      */
-    public static generateResponse(res: Response, status: number, resultCode: string, data?) {
+    public static generateResponse(res: Response, resultCode: string, data?) {
         let resData = {
             result_code: resultCode || getResultCode("UNMAPPED_ERROR")
         };
         if (data) {
             this.appendIntoData(resData, data, 'data');
         }
-        if (status) {
-            res.status(status).json(resData);
-        } else {
-            res.json(resData);
-        }
+        res.json(resData);
     }
 
     /**
