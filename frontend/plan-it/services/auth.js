@@ -22,7 +22,7 @@ const signUp = async (url, attributes) => {
 
 const signIn = async (url, attributes) => {
   const fetchApi = FetchApi.create(url.trim());
-  let { status, data, errors } = await fetchApi.post('/authentication/login', attributes);
+  let { status, data, errors } = await fetchApi.post('/authentication/login', {data: attributes});
 
   if (_.has(errors, 'full_messages')) {
     errors = errors.full_messages;

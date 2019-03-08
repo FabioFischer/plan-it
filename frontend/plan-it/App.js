@@ -1,18 +1,22 @@
-import React from 'react';
-import { AppRegistry } from 'react-native';
-import { createDrawerNavigator } from 'react-navigation';
+import { createDrawerNavigator, createStackNavigator, createAppContainer } from 'react-navigation';
 
 import Screens from './screens';
 
-const PlnIt = createDrawerNavigator({
-  Login: { screen: Screens.Login },
-  NewUser: { screen: Screens.NewUser }
+const RootStack = createDrawerNavigator(
+  {
+    Login: Screens.Login,
+    NewUser: Screens.NewUser,
+  },
+  {
+    intialRouteName: 'Login',
+    navigationOptions: { },
+  }
+);
+
+const AppNavigator = createStackNavigator({
+  Home: {
+    screen: RootStack
+  }
 });
 
-const M = () => {
-  return (
-    <PlnIt></PlnIt>
-  );
-};
-
-AppRegistry.registerComponent('plan-it', () => M);
+export default createAppContainer(AppNavigator);

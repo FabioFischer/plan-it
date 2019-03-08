@@ -25,7 +25,7 @@ const styles = StyleSheet.create({
   }
 });
 
-class LoginScreen extends Components.PyxisComponent {
+class LoginScreen extends Components.PlnItComponent {
   static navigationOptions = {
     title: 'Login'
   };

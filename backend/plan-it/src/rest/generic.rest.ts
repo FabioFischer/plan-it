@@ -163,7 +163,8 @@ export abstract class GenericRest {
         } catch(e) {
             console.log(e);
             resultCode = e.errorCode || getResultCode("UNMAPPED_ERROR");
-            StaticLogger.getLoggerController().getLogger().log('error', e);
+            console.log(e)
+            //StaticLogger.getLoggerController().getLogger().log('error', e);
             this.generateResponse(res, e.status || 500 ,resultCode);
         } finally {
             requisitionLog.setResStatus(res.statusCode);

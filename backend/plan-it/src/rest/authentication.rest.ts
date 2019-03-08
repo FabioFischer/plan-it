@@ -70,6 +70,8 @@ export class AuthenticationRouter extends GenericDBRest {
             let reqBody = req.body.data;
             let dbRes = [];
             
+            console.log(reqBody)
+
             try {
                 if (!reqBody) throw 'Requisition body not found';
                 if (!reqBody.email) throw 'Requisition body must contain the <email> property';
@@ -80,7 +82,7 @@ export class AuthenticationRouter extends GenericDBRest {
                 throw {exception: e, errorCode: getResultCode('MODEL_EXCEPTION')};
             }
             try {
-                dbRes = await AuthenticationRouter.getDBConnector().runSQL(AuthenticationRouter.getSQLProvider().getUserLogin(user), 
+                dbRes = await AuthenticationRouter.getDBConnector().runSQL(AuthenticationRouter.getSQLProvider().getUserAuthentication(user), 
                 AuthenticationRouter.getDBConnector().returnFirstRow);
 
                 if (dbRes == null) {
@@ -178,7 +180,7 @@ export class AuthenticationRouter extends GenericDBRest {
             }
 
             try {
-                dbRes = await AuthenticationRouter.getDBConnector().runSQL(AuthenticationRouter.getSQLProvider().getUserLoginByUserId(model), 
+                dbRes = await AuthenticationRouter.getDBConnector().runSQL(AuthenticationRouter.getSQLProvider().getUserAuthenticationByUserId(model), 
                 AuthenticationRouter.getDBConnector().returnFirstRow);
 
                 if (dbRes == null) {
